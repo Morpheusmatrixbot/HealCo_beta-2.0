@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # --- Ролевые модели ---
 ROLES = {
     "нутрициолог": "Ты — профессиональный нутрициолог с глубокими знаниями в диетологии и биохимии. Твоя задача — составлять рационы, анализировать продукты и отвечать на вопросы о питании. Твои ответы компетентны и основаны на науке.",
-    "фитнесс-тренер": "Ты — элитный фитнес-тренер. Твоя задача — давать профессиональные рекомендации по тренировкам, восстановлению и спортивной физиологии. Твои ответы точны, научны и мотивируют как на персональной тренировке.",
+    "фитнес-тренер": "Ты — элитный фитнес-тренер. Твоя задача — давать профессиональные рекомендации по тренировкам, восстановлению и спортивной физиологии. Твои ответы точны, научны и мотивируют как на персональной тренировке.",
     "психотерапевт": "Ты — эмпатичный и мудрый психотерапевт. Твоя задача — оказывать поддержку, помогать пользователю разбираться в своих чувствах и настроении. Ты используешь техники активного слушания и никогда не осуждаешь. Твоя речь спокойная и вселяющая уверенность.",
     "медицинский наставник": "Ты внимательный медицинский наставник. Твоя задача — давать легкие рекомендации по улучшению здоровья и анализировать общие симптомы, но всегда с оговоркой, что это не заменяет консультацию реального врача.",
     "личный наставник": "Ты — личный наставник и коуч по продуктивности. Твоя задача — помогать в организации дня, формировании полезных привычек и достижении жизненных целей. Твои ответы вдохновляющие, структурированные и поддерживающие.",
@@ -108,13 +108,14 @@ async def show_diaries_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def handle_role_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     requested_role_display = update.message.text
-    requested_role = requested_role_display.lower().replace('-', ' ')
+    # ИСПРАВЛЕНИЕ: Убрана некорректная замена дефиса на пробел
+    requested_role = requested_role_display.lower()
     data = get_user_data_from_db(user_id)
     if requested_role in ROLES:
         data["current_role"] = requested_role
         save_user_data_to_db(user_id, data)
         if requested_role == "нутрициолог": role_keyboard = NUTRITIONIST_KEYBOARD
-        elif requested_role == "фитнесс-тренер": role_keyboard = FITNESS_TRAINER_KEYBOARD
+        elif requested_role == "фитнес-тренер": role_keyboard = FITNESS_TRAINER_KEYBOARD
         elif requested_role == "психотерапевт": role_keyboard = PSYCHOTHERAPIST_KEYBOARD
         else: role_keyboard = GENERAL_SPECIALIST_KEYBOARD
         try:
@@ -226,7 +227,7 @@ async def create_personalized_menu(update: Update, context: ContextTypes.DEFAULT
     data = get_user_data_from_db(user_id)
     await update.message.reply_text("Так, минуточку... 👨‍🍳 Составляю для тебя два варианта меню. Ожидай...", reply_markup=ReplyKeyboardRemove())
     role_prompt = ROLES["нутрициолог"]
-    menu_prompt = (f"Ты — {role_prompt}. Используя данные профиля пользователя, составь два варианта меню на один день: 'Базовое меню' (из простых, доступных продуктов) и 'Гурме-меню' (с более редкими, интересными продуктами).\n{get_personal_prompt(data.get('profile_data', {}), data.get('first_name'))}\nДля каждого приема пищи (завтрак, обед, ужин) в обоих меню, укажи:\n- 🍳/🥗/🍲 Название блюда\n- ⚖️ Примерный объем порции в граммах (например, ~300 г)\n- 🔥 Примерную калорийность (например, ~450 ккал)\nИспользуй эмодзи для списков. Ответ должен быть четко структурирован, дружелюбен и мотивирующ.")
+    menu_prompt = (f"Ты — {role_prompt}. Используя данные профиля пользователя, составь два варианта меню на один день: 'Базовое меню' (из простых, доступных продуктов) и 'Гурме-меню' (с более редкими, интересными продуктами).\n{get_personal_prompt(data.get('profile_data', {}), data.get('first_name'))}\nДля каждого приема пищи (завтрак, обед, ужин) в обоих меню, укажи:\n- 🍳/🥗/🍲 Название блюда\n- ⚖️ Примерный объем порции в граммах\n- 🔥 Примерную калорийность\n**Ключевое требование:** Если в меню есть перекусы (например, орехи, ягоды, фрукты), обязательно укажи их количество в штуках (например, 'миндаль (10-12 шт.)', 'клубника (5-6 ягод)', '1 среднее яблоко').\nИспользуй эмодзи для списков. Ответ должен быть четко структурирован, дружелюбен и мотивирующ.")
     try:
         response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": menu_prompt}], max_tokens=1500, temperature=0.8)
         await update.message.reply_text(response.choices[0].message.content, reply_markup=NUTRITIONIST_KEYBOARD)
@@ -242,7 +243,7 @@ async def create_workout_plan_final(update: Update, context: ContextTypes.DEFAUL
     data = get_user_data_from_db(user_id)
     workout_location = update.message.text.lower()
     await update.message.reply_text("💪 Отлично! Разрабатываю для тебя эффективный план тренировок... Это займет секунду.", reply_markup=ReplyKeyboardRemove())
-    role_prompt = ROLES["фитнесс-тренер"]
+    role_prompt = ROLES["фитнес-тренер"]
     workout_prompt = (f"Ты — {role_prompt}. Создай подробный план тренировок на неделю (3 дня), используя данные пользователя.\nТренировки будут проходить '{workout_location}'.\n{get_personal_prompt(data.get('profile_data', {}), data.get('first_name'))}\nДля каждого тренировочного дня:\n- 🗓️ Тип тренировки\n- 💪 Упражнения (подходы/повторения)\n- 🔥 Примерное количество сжигаемых калорий\n- ❤️ Целевые пульсовые зоны: 'Упражнение', 'Отдых' и 'Прервать если'.\nИспользуй эмодзи для списков и акцентов. План должен быть супер-мотивирующим.")
     try:
         response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": workout_prompt}], max_tokens=1500, temperature=0.7)
@@ -312,7 +313,7 @@ async def show_workout_diary(update: Update, context: ContextTypes.DEFAULT_TYPE)
     for entry in diary_entries[-15:]:
         response_text += f"✅ {entry}\n"
     await update.message.reply_text(response_text, reply_markup=DIARIES_KEYBOARD)
-
+    
 async def health_diary_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     profile_diseases = get_user_data_from_db(update.effective_user.id).get("profile_data", {}).get("diseases", "").lower()
     keyboard_layout = [row[:] for row in HEALTH_KEYBOARD_BASE]
@@ -321,9 +322,10 @@ async def health_diary_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await update.message.reply_text("Это ваш личный Дневник здоровья. Что вы хотите сделать?", reply_markup=ReplyKeyboardMarkup(keyboard_layout, resize_keyboard=True, one_time_keyboard=True))
 
 async def start_symptom_logging(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    data = get_user_data_from_db(update.effective_user.id)
+    user_id = update.effective_user.id
+    data = get_user_data_from_db(user_id)
     data["context_state"] = 'awaiting_symptom'
-    save_user_data_to_db(update.effective_user.id, data)
+    save_user_data_to_db(user_id, data)
     await update.message.reply_text("Пожалуйста, опишите симптомы, которые вас беспокоят. Постарайтесь быть как можно точнее.", reply_markup=ReplyKeyboardRemove())
 
 async def show_health_diary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -340,15 +342,17 @@ async def show_health_diary(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await update.message.reply_text(response_text, reply_markup=DIARIES_KEYBOARD, parse_mode='Markdown')
 
 async def start_pressure_logging(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    data = get_user_data_from_db(update.effective_user.id)
+    user_id = update.effective_user.id
+    data = get_user_data_from_db(user_id)
     data["context_state"] = 'awaiting_pressure'
-    save_user_data_to_db(update.effective_user.id, data)
+    save_user_data_to_db(user_id, data)
     await update.message.reply_text("Введите ваше давление в формате '120/80'.", reply_markup=ReplyKeyboardRemove())
 
 async def start_sugar_logging(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    data = get_user_data_from_db(update.effective_user.id)
+    user_id = update.effective_user.id
+    data = get_user_data_from_db(user_id)
     data["context_state"] = 'awaiting_sugar'
-    save_user_data_to_db(update.effective_user.id, data)
+    save_user_data_to_db(user_id, data)
     await update.message.reply_text("Введите ваш уровень сахара в крови (например, '6.5' или '6.5 ммоль/л').", reply_markup=ReplyKeyboardRemove())
 
 async def mental_health_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -441,7 +445,7 @@ async def handle_specialist_question(update: Update, context: ContextTypes.DEFAU
     await update.message.reply_text(f"Думаю над вашим вопросом для {current_role.capitalize()}...", reply_markup=ReplyKeyboardRemove())
     full_prompt = f"Твоя текущая роль: {role_prompt}. {personal_info} Ответь на вопрос пользователя, соблюдая свою роль. Вопрос: {update.message.text}. Используй эмодзи для форматирования."
     if current_role == "нутрициолог": role_keyboard = NUTRITIONIST_KEYBOARD
-    elif current_role == "фитнесс-тренер": role_keyboard = FITNESS_TRAINER_KEYBOARD
+    elif current_role == "фитнес-тренер": role_keyboard = FITNESS_TRAINER_KEYBOARD
     elif current_role == "психотерапевт": role_keyboard = PSYCHOTHERAPIST_KEYBOARD
     else: role_keyboard = GENERAL_SPECIALIST_KEYBOARD
     try:
