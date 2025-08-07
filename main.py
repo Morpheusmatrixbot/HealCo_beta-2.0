@@ -198,28 +198,19 @@ async def start_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     data = get_user_data_from_db(user_id)
     data["context_state"] = 'awaiting_profile'
     save_user_data_to_db(user_id, data)
-    
     context.user_data['profile_questions_index'] = 0
     context.user_data['profile_data'] = {}
-
-    await update.message.reply_text(
-        "Отлично! Начнем заполнение твоего профиля.\n"
-        "Напиши `Отмена`, если захочешь прервать опрос в любой момент.",
-        reply_markup=ReplyKeyboardRemove()
-    )
+    await update.message.reply_text("Отлично! Начнем заполнение твоего профиля.\nНапиши `Отмена`, если захочешь прервать.", reply_markup=ReplyKeyboardRemove())
     await ask_next_profile_question(update, context)
 
 async def ask_next_profile_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     question_index = context.user_data.get('profile_questions_index', 0)
-    
     if question_index >= len(PROFILE_QUESTIONS):
         await finalize_profile(update, context)
         return
-
     current_question_key = PROFILE_QUESTIONS[question_index]
     question_text = ""
     reply_markup = ReplyKeyboardRemove()
-
     if current_question_key == "profile_state_gender":
         question_text = "Укажи свой пол:"
         reply_markup = ReplyKeyboardMarkup(GENDER_KEYBOARD, one_time_keyboard=True, resize_keyboard=True)
@@ -234,24 +225,19 @@ async def ask_next_profile_question(update: Update, context: ContextTypes.DEFAUL
         reply_markup = ReplyKeyboardMarkup(GOAL_KEYBOARD, one_time_keyboard=True, resize_keyboard=True)
     elif current_question_key == "profile_state_diseases": question_text = "Есть ли у тебя хронические заболевания? Если нет, напиши `Нет`."
     elif current_question_key == "profile_state_allergies": question_text = "Есть ли у тебя пищевые аллергии или непереносимости? Если нет, напиши `Нет`."
-    
     await update.message.reply_text(question_text, reply_markup=reply_markup)
 
 async def handle_profile_response(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     message_text = update.message.text
-    
     if message_text and message_text.lower() == "отмена":
         await cancel_profile(update, context)
         return
-
     question_index = context.user_data.get('profile_questions_index', 0)
     current_question_key = PROFILE_QUESTIONS[question_index]
     profile_data = context.user_data.get('profile_data', {})
-    
     valid = True
     error_message = ""
-    
     try:
         if current_question_key == "profile_state_gender":
             if message_text.lower() in ["мужской", "женский"]: profile_data["gender"] = message_text
@@ -279,30 +265,22 @@ async def handle_profile_response(update: Update, context: ContextTypes.DEFAULT_
     except (ValueError, TypeError):
         valid = False
         error_message = "Кажется, формат данных неверный. Попробуй еще раз."
-
     if not valid:
         await update.message.reply_text(error_message)
         return
-
     context.user_data['profile_data'] = profile_data
     context.user_data['profile_questions_index'] += 1
-    
     await ask_next_profile_question(update, context)
 
 async def finalize_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
-    
     data["profile_data"] = context.user_data.get('profile_data', {})
     data["score"] = data.get("score", 0) + 30
-    save_user_data_to_db(user_id, data)
-    
-    context.user_data.pop('profile_questions_index', None)
-    context.user_data.pop('profile_data', None)
-    data = get_user_data_from_db(user_id)
     data.pop('context_state', None)
     save_user_data_to_db(user_id, data)
-
+    context.user_data.pop('profile_questions_index', None)
+    context.user_data.pop('profile_data', None)
     await update.message.reply_text(f"Спасибо! Твой профиль заполнен. За это ты получаешь 30 баллов! Твой текущий счет: {data['score']}.\nТеперь тебе доступны все функции.", reply_markup=MAIN_MENU_KEYBOARD)
 
 async def cancel_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -320,9 +298,9 @@ async def create_personalized_menu(update: Update, context: ContextTypes.DEFAULT
     data = get_user_data_from_db(user_id)
     profile = data.get("profile_data", {})
     if not profile.get('goal'):
-        await update.message.reply_text("Чтобы я составил меню, мне нужно знать о тебе больше! Пожалуйста, заполни профиль.", reply_markup=START_KEYBOARD)
+        await update.message.reply_text("Чтобы я составил меню, сначала нужно заполнить профиль.", reply_markup=START_KEYBOARD)
         return
-    await update.message.reply_text("Так, минуточку... 👨‍🍳 Составляю для тебя два варианта меню: простое и для гурманов. Ожидай...", reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text("Так, минуточку... 👨‍🍳 Составляю для тебя два варианта меню. Ожидай...", reply_markup=ReplyKeyboardRemove())
     role_prompt = ROLES["нутрициолог"]
     menu_prompt = (
         f"Ты — {role_prompt}. Используя данные профиля пользователя, составь два варианта меню на один день: 'Базовое меню' (из простых, доступных продуктов) и 'Гурме-меню' (с более редкими, интересными продуктами).\n"
@@ -359,14 +337,14 @@ async def create_workout_plan_final(update: Update, context: ContextTypes.DEFAUL
         "- 💪 Упражнения (подходы/повторения).\n"
         "- 🔥 Примерное количество сжигаемых калорий за тренировку.\n"
         "- ❤️ Целевые пульсовые зоны: 'Пульс для упражнения', 'Пульс для отдыха' и 'Прервать, если пульс выше'.\n"
-        "Используй эмодзи для списков и акцентов. План должен быть супер-мотивирующим и понятным."
+        "Используй эмодзи для списков и акцентов. План должен быть супер-мотивирующим."
     )
     try:
         response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": workout_prompt}], max_tokens=1500, temperature=0.7)
         await update.message.reply_text(response.choices[0].message.content, reply_markup=FITNESS_TRAINER_KEYBOARD)
     except Exception as e:
         logger.error(f"Ошибка генерации плана тренировок: {e}")
-        await update.message.reply_text("Не смог составить план. Что-то пошло не так с AI. Попробуй еще раз.", reply_markup=FITNESS_TRAINER_KEYBOARD)
+        await update.message.reply_text("Не смог составить план. Что-то пошло не так с AI.", reply_markup=FITNESS_TRAINER_KEYBOARD)
 
 # --- Функции-заглушки для новых кнопок ---
 async def analyze_product_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -380,6 +358,7 @@ async def handle_breathing_technique(update: Update, context: ContextTypes.DEFAU
 
 # --- Дневники ---
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
     await update.message.reply_text("🧐 Анализирую твой кулинарный шедевр...", reply_markup=ReplyKeyboardRemove())
     try:
         file_obj = await context.bot.get_file(update.message.photo[-1].file_id)
@@ -388,12 +367,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         vision_prompt = "Это фотография еды. Проанализируй ее максимально подробно. В ответе укажи:\n1. 🍽️ **Название блюда**\n2. 📝 **Предполагаемые ингредиенты**\n3. ⚖️ **Примерный вес порции** в граммах\n4. 🔥 **Ориентировочная калорийность** (диапазон). Если не еда, так и скажи."
         response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": [{"type": "text", "content": vision_prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], max_tokens=400)
         description = response.choices[0].message.content
-        user_id = update.effective_user.id
         data = get_user_data_from_db(user_id)
         food_title = description.split('\n')[0].replace("🍽️ **Название блюда:**", "").strip()
         data["food_diary"].append(f"{datetime.datetime.now().strftime('%H:%M %d.%m')} - {food_title}")
         save_user_data_to_db(user_id, data)
-        await update.message.reply_text(f"Готово! Вот мой анализ:\n\n{description}\n\nЯ добавил это блюдо в твой дневник питания. ✅", reply_markup=MAIN_MENU_KEYBOARD)
+        await update.message.reply_text(f"Готово! Вот мой анализ:\n\n{description}\n\nЯ добавил это блюдо в твой дневник питания. ✅", reply_markup=MAIN_MENU_KEYBOARD, parse_mode='Markdown')
     except Exception as e:
         logger.error(f"Ошибка анализа фото: {e}")
         await update.message.reply_text("Ой, не смог распознать фото. Попробуй еще раз!", reply_markup=MAIN_MENU_KEYBOARD)
@@ -404,7 +382,7 @@ async def show_food_diary(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if not diary_entries:
         await update.message.reply_text("Твой дневник питания пока пуст.", reply_markup=DIARIES_KEYBOARD)
         return
-    response_text = "Твой дневник питания:\n" + "\n".join([f"- {entry}" for entry in diary_entries[-15:]])
+    response_text = "Твой дневник питания (последние 15 записей):\n" + "\n".join([f"- {entry}" for entry in diary_entries[-15:]])
     await update.message.reply_text(response_text, reply_markup=DIARIES_KEYBOARD)
     
 async def workout_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -431,30 +409,30 @@ async def show_workout_diary(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response_text += f"✅ {entry}\n"
     await update.message.reply_text(response_text, reply_markup=DIARIES_KEYBOARD)
     
-# --- Прочее ---
 async def show_score(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = get_user_data_from_db(update.effective_user.id)
     keyboard = MAIN_MENU_KEYBOARD if data.get("profile_data", {}).get('goal') else START_KEYBOARD
     await update.message.reply_text(f"Твой текущий счет: {data.get('score', 0)} баллов. 🏆", reply_markup=keyboard)
 
 # --- Обработчики состояний ---
-async def handle_symptom_input(update, context):
+async def handle_symptom_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
     context.user_data.pop('context_state')
     await update.message.reply_text("Анализирую ваши симптомы... 🧠", reply_markup=ReplyKeyboardRemove())
-    prompt = f"Выступи в роли 'Медицинского советника'. Проанализируй следующие симптомы от пользователя: '{update.message.text}'. Дай краткий, общий совет о возможных причинах в дружелюбной форме. ВАЖНЕЙШИЙ ПРИОРИТЕТ: Оцени потенциальную серьезность. Если есть хоть малейший намек на что-то опасное (например, боль в груди, затрудненное дыхание, онемение, очень высокая температура, нестерпимая боль), твой ГЛАВНЫЙ ответ должен быть — немедленно и настоятельно порекомендовать обратиться к врачу или вызвать скорую помощь. В ЛЮБОМ СЛУЧАЕ, закончи свой ответ четким и ясным напоминанием: 'Помните, я — AI-ассистент, и моя консультация не заменяет визит к настоящему врачу.'"
+    prompt = f"Выступи в роли 'Медицинского советника'. Проанализируй следующие симптомы от пользователя: '{update.message.text}'. Дай краткий, общий совет о возможных причинах в дружелюбной форме. ВАЖНЕЙШИЙ ПРИОРИТЕТ: Оцени потенциальную серьезность. Если есть хоть малейший намек на что-то опасное (например, боль в груди, затрудненное дыхание, онемение, очень высокая температура, нестерпимая боль), твой ГЛАВНЫЙ ответ должен быть — немедленно и настоятельно порекомендовать обратиться к врачу или вызвать скорую помощь. В ЛЮБОМ СЛУЧAЕ, закончи свой ответ четким и ясным напоминанием: 'Помните, я — AI-ассистент, и моя консультация не заменяет визит к настоящему врачу.'"
     try:
-        response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}], max_tokens=400)
+        response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}], max_tokens=1000)
         ai_response = response.choices[0].message.content
     except Exception as e:
         logger.error(f"Ошибка анализа симптомов: {e}")
         ai_response = "К сожалению, не удалось проанализировать симптомы из-за технической ошибки."
-    data = get_user_data_from_db(update.effective_user.id)
+    data = get_user_data_from_db(user_id)
     entry = {"date": datetime.date.today().strftime('%d.%m.%Y'), "type": "symptom", "text": update.message.text}
     data.setdefault("health_diary", []).append(entry)
-    save_user_data_to_db(update.effective_user.id, data)
+    save_user_data_to_db(user_id, data)
     await update.message.reply_text(ai_response, reply_markup=MAIN_MENU_KEYBOARD)
 
-async def handle_pressure_input(update, context):
+async def handle_pressure_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.pop('context_state')
     data = get_user_data_from_db(update.effective_user.id)
     entry = {"date": datetime.date.today().strftime('%d.%m.%Y'), "type": "pressure", "text": f"Давление: {update.message.text}"}
@@ -462,7 +440,7 @@ async def handle_pressure_input(update, context):
     save_user_data_to_db(update.effective_user.id, data)
     await update.message.reply_text("✅ Запись о давлении добавлена в ваш дневник.", reply_markup=MAIN_MENU_KEYBOARD)
 
-async def handle_sugar_input(update, context):
+async def handle_sugar_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.pop('context_state')
     data = get_user_data_from_db(update.effective_user.id)
     entry = {"date": datetime.date.today().strftime('%d.%m.%Y'), "type": "sugar", "text": f"Сахар в крови: {update.message.text}"}
@@ -470,7 +448,7 @@ async def handle_sugar_input(update, context):
     save_user_data_to_db(update.effective_user.id, data)
     await update.message.reply_text("✅ Запись об уровне сахара добавлена в ваш дневник.", reply_markup=MAIN_MENU_KEYBOARD)
 
-async def handle_specialist_question(update, context):
+async def handle_specialist_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.pop('context_state')
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
@@ -480,7 +458,7 @@ async def handle_specialist_question(update, context):
     
     await update.message.reply_text(f"Думаю над вашим вопросом для {current_role.capitalize()}...", reply_markup=ReplyKeyboardRemove())
     
-    full_prompt = f"Твоя текущая роль: {role_prompt}. {personal_info} Ответь на вопрос пользователя, соблюдая свою роль. Вопрос: {update.message.text}"
+    full_prompt = f"Твоя текущая роль: {role_prompt}. {personal_info} Ответь на вопрос пользователя, соблюдая свою роль. Вопрос: {update.message.text}. Используй эмодзи для форматирования."
     
     if current_role == "нутрициолог": role_keyboard = NUTRITIONIST_KEYBOARD
     elif current_role == "фитнесс-тренер": role_keyboard = FITNESS_TRAINER_KEYBOARD
@@ -488,7 +466,7 @@ async def handle_specialist_question(update, context):
     else: role_keyboard = GENERAL_SPECIALIST_KEYBOARD
 
     try:
-        response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": full_prompt}], max_tokens=1000, temperature=0.7)
+        response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": full_prompt}], max_tokens=1500, temperature=0.7)
         await update.message.reply_text(response.choices[0].message.content, reply_markup=role_keyboard)
     except Exception as e:
         logger.error(f"Ошибка вызова OpenAI для ответа специалиста: {e}")
@@ -501,12 +479,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     # --- Сначала проверяем состояния ---
     context_state = context.user_data.get('context_state')
-    data = get_user_data_from_db(user_id) # Получаем данные один раз
-    if context_state:
+    data = get_user_data_from_db(user_id)
+    if data.get("context_state"): # Проверяем состояние в базе данных
+        context_state = data.get("context_state")
+        if context_state == 'awaiting_profile': await handle_profile_response(update, context); return
         if context_state == 'awaiting_symptom': await handle_symptom_input(update, context); return
         if context_state == 'awaiting_pressure': await handle_pressure_input(update, context); return
         if context_state == 'awaiting_sugar': await handle_sugar_input(update, context); return
-        if context_state == 'awaiting_profile': await handle_profile_response(update, context); return
         if context_state == 'awaiting_question_for_specialist': await handle_specialist_question(update, context); return
 
     # --- Затем обрабатываем кнопки ---
@@ -525,18 +504,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "⬅️ назад к психотерапевту": mental_health_menu,
     }
     
-    # Обработка выбора роли по названию кнопки
     if message_text.capitalize() in ROLE_BUTTON_LABELS:
         await handle_role_selection(update, context)
         return
         
-    # Обработка остальных кнопок
     for key, func in button_map.items():
         if key in message_text.lower():
             await func(update, context)
             return
             
-    # Обработка общих вопросов к специалисту
     if "задать вопрос" in message_text.lower():
         current_role = data.get("current_role", "специалисту")
         await update.message.reply_text(f"Конечно, я слушаю ваш вопрос для **{current_role.capitalize()}**.", parse_mode='Markdown', reply_markup=ReplyKeyboardRemove())
@@ -548,15 +524,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 def main() -> None:
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # --- Команды ---
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("role", choose_specialist))
-    application.add_handler(CommandHandler("diaries", show_diaries_menu))
     application.add_handler(CommandHandler("profile", start_profile))
     application.add_handler(CommandHandler("score", show_score))
     application.add_handler(CommandHandler("workout_done", workout_done))
 
-    # --- Обработчики сообщений ---
     application.add_handler(MessageHandler(filters.Regex(r'^(Отличное 👍|Хорошее 🙂|Нормальное 😐|Плохое 😕|Очень плохое 😔)$'), log_mood))
     application.add_handler(MessageHandler(filters.Regex(r'^(Дома|В зале|На улице)$'), create_workout_plan_final))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
