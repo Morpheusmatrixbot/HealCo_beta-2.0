@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import logging
 import os
 import asyncio
@@ -756,4 +758,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
