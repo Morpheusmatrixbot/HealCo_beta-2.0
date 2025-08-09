@@ -122,7 +122,7 @@ def get_personal_prompt(user_profile_data: dict, first_name: str = None) -> str:
         parts.append(f"аллергии: {user_profile_data['allergies']}")
     return f"Учитывай в ответе, что пользователь сообщил о себе: {', '.join(parts)}. " if parts else ""
 
-async def check_profile_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def check_profile_update(update: Update, context: ContextTypes.DEFAULT_TYPES):
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
     last_updated_str = data.get("profile_data", {}).get("last_updated")
@@ -140,7 +140,7 @@ async def check_profile_update(update: Update, context: ContextTypes.DEFAULT_TYP
     return True
 
 # --- Основные команды и навигация ---
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPES) -> None:
     user = update.effective_user
     data = get_user_data_from_db(user.id)
     data["first_name"] = user.first_name
@@ -157,13 +157,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         parse_mode='HTML'
     )
 
-async def choose_specialist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def choose_specialist(update: Update, context: ContextTypes.DEFAULT_TYPES) -> None:
     await update.message.reply_text("Выберите специалиста, с которым хотите пообщаться:", reply_markup=ROLE_KEYBOARD)
 
-async def show_diaries_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def show_diaries_menu(update: Update, context: ContextTypes.DEFAULT_TYPES) -> None:
     await update.message.reply_text("Какой дневник вы хотите посмотреть или обновить?", reply_markup=DIARIES_KEYBOARD)
 
-async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPES) -> None:
     await update.message.reply_text("🏆 Собираю данные для таблицы лидеров...")
     all_users_data = get_all_users_data()
     valid_users = [
@@ -185,7 +185,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await update.message.reply_text(response_text, parse_mode='HTML')
 
 # --- Логика Ролей-Специалистов ---
-async def handle_role_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_role_selection(update: Update, context: ContextTypes.DEFAULT_TYPES) -> None:
     user_id = update.effective_user.id
     requested_role_display = update.message.text
     requested_role = next((key for key, val in ROLES.items() if key.capitalize() == requested_role_display), None)
@@ -226,7 +226,7 @@ async def handle_role_selection(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(greeting, reply_markup=role_keyboard)
 
 # --- Профиль Пользователя ---
-async def start_profile_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def start_profile_dialog(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     context.user_data['profile_data'] = {}
     await update.message.reply_text(
         "Отлично! Начнем. Пожалуйста, ответь на несколько вопросов.\n"
@@ -236,7 +236,7 @@ async def start_profile_dialog(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.message.reply_text("Укажи свой пол:", reply_markup=GENDER_KEYBOARD)
     return GENDER
 
-async def process_gender(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_gender(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     text = update.message.text
     if text.lower() not in ["мужской", "женский"]:
         await update.message.reply_text("Пожалуйста, выбери один из вариантов на клавиатуре.", reply_markup=GENDER_KEYBOARD)
@@ -245,7 +245,7 @@ async def process_gender(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text("Сколько тебе полных лет?", reply_markup=ReplyKeyboardRemove())
     return AGE
 
-async def process_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_age(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     try:
         age = int(update.message.text)
         if not (0 < age < 120): raise ValueError
@@ -256,7 +256,7 @@ async def process_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         await update.message.reply_text("Пожалуйста, введи корректный возраст (целое число от 1 до 119).")
         return AGE
 
-async def process_height(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_height(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     try:
         height = int(update.message.text)
         if not (50 < height < 250): raise ValueError
@@ -267,7 +267,7 @@ async def process_height(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("Пожалуйста, введи корректный рост в см (число от 51 до 249).")
         return HEIGHT
 
-async def process_weight(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_weight(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     try:
         weight = float(update.message.text.replace(',', '.'))
         if not (20 < weight < 300): raise ValueError
@@ -278,7 +278,7 @@ async def process_weight(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("Пожалуйста, введи корректный вес в кг (число от 21 до 299).")
         return WEIGHT
 
-async def process_activity(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_activity(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     text = update.message.text
     if text.lower() not in ["сидячий", "умеренный", "активный"]:
         await update.message.reply_text("Пожалуйста, выбери один из вариантов на клавиатуре.", reply_markup=ACTIVITY_KEYBOARD)
@@ -287,7 +287,7 @@ async def process_activity(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await update.message.reply_text("Какова твоя основная цель?", reply_markup=GOAL_KEYBOARD)
     return GOAL
 
-async def process_goal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_goal(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     text = update.message.text
     if text.lower() not in ["похудеть", "набрать массу", "поддерживать вес"]:
         await update.message.reply_text("Пожалуйста, выбери один из вариантов на клавиатуре.", reply_markup=GOAL_KEYBOARD)
@@ -296,17 +296,17 @@ async def process_goal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text("Есть ли у тебя хронические заболевания? Если нет, напиши 'Нет'.", reply_markup=ReplyKeyboardRemove())
     return DISEASES
 
-async def process_diseases(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_diseases(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     context.user_data['profile_data']['diseases'] = update.message.text
     await update.message.reply_text("Есть ли у тебя пищевые аллергии или непереносимости? Если нет, напиши 'Нет'.")
     return ALLERGIES
 
-async def process_allergies(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def process_allergies(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     context.user_data['profile_data']['allergies'] = update.message.text
     await finalize_profile(update, context)
     return ConversationHandler.END
 
-async def finalize_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def finalize_profile(update: Update, context: ContextTypes.DEFAULT_TYPES):
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
     is_new_profile = not data.get("profile_data", {}).get('goal')
@@ -330,14 +330,14 @@ async def finalize_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_user_data_to_db(user_id, data)
     context.user_data.clear()
 
-async def cancel_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def cancel_dialog(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     context.user_data.clear()
     await update.message.reply_text("Действие отменено.", reply_markup=MAIN_MENU_KEYBOARD)
     return ConversationHandler.END
 
 
 # --- Функционал Нутрициолога ---
-async def calculate_kbzhu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def calculate_kbzhu(update: Update, context: ContextTypes.DEFAULT_TYPES):
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
     profile = data.get("profile_data")
@@ -380,7 +380,7 @@ async def calculate_kbzhu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Ошибка расчета КБЖУ: {e}")
         await update.message.reply_text("Произошла ошибка при расчете. Проверь данные в своем профиле.", reply_markup=NUTRITIONIST_KEYBOARD)
 
-async def nutritionist_consultation_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def nutritionist_consultation_info(update: Update, context: ContextTypes.DEFAULT_TYPES):
     await update.message.reply_text(
         "Я — AI-ассистент и могу дать общие рекомендации.\n\n"
         "Для получения детальной и персональной консультации я настоятельно рекомендую обратиться к "
@@ -391,16 +391,16 @@ async def nutritionist_consultation_info(update: Update, context: ContextTypes.D
     )
 
 # --- Функционал Фитнес-тренера ---
-async def ask_workout_location(update: Update, context: ContextTypes.DEFAULT_type) -> int:
+async def ask_workout_location(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     await update.message.reply_text("Где ты предпочитаешь тренироваться?", reply_markup=ReplyKeyboardMarkup(WORKOUT_PLACE_KEYBOARD, one_time_keyboard=True, resize_keyboard=True))
     return LOCATION
 
-async def ask_equipment(update: Update, context: ContextTypes.DEFAULT_type) -> int:
+async def ask_equipment(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     context.user_data['workout_location'] = update.message.text
     await update.message.reply_text("У тебя есть какой-нибудь инвентарь (например, гантели, резинки, турник)? Если да, перечисли его. Если нет, напиши 'Нет'.", reply_markup=ReplyKeyboardRemove())
     return EQUIPMENT
 
-async def generate_workout_plan(update: Update, context: ContextTypes.DEFAULT_type) -> int:
+async def generate_workout_plan(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     equipment = update.message.text
     location = context.user_data['workout_location']
     
@@ -438,7 +438,7 @@ async def generate_workout_plan(update: Update, context: ContextTypes.DEFAULT_ty
     context.user_data.clear()
     return ConversationHandler.END
     
-async def calculate_bmi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def calculate_bmi(update: Update, context: ContextTypes.DEFAULT_TYPES):
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
     profile = data.get("profile_data")
@@ -477,7 +477,7 @@ async def calculate_bmi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Ошибка анализа ИМТ: {e}")
         await update.message.reply_text("Произошла ошибка при анализе ИМТ.", reply_markup=FITNESS_TRAINER_KEYBOARD)
 
-async def explain_vo2max(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def explain_vo2max(update: Update, context: ContextTypes.DEFAULT_TYPES):
     explanation = (
         "<b>VO2 max</b> — это максимальное количество кислорода (в миллилитрах), которое человек способен "
         "потреблять в минуту на килограмм веса тела во время интенсивной физической нагрузки.\n\n"
@@ -489,7 +489,7 @@ async def explain_vo2max(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(explanation, reply_markup=FITNESS_TRAINER_KEYBOARD, parse_mode='HTML')
 
-async def trainer_consultation_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def trainer_consultation_info(update: Update, context: ContextTypes.DEFAULT_TYPES):
     await update.message.reply_text(
         "Я — AI-тренер и могу составить хороший базовый план.\n\n"
         "Для работы с травмами, подготовки к соревнованиям или если у тебя есть специфические цели, "
@@ -499,16 +499,16 @@ async def trainer_consultation_info(update: Update, context: ContextTypes.DEFAUL
     )
 
 # --- Функционал Психотерапевта ---
-async def start_mood_logging(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def start_mood_logging(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     await update.message.reply_text("Как ты себя чувствуешь прямо сейчас?", reply_markup=MOOD_SCALE_KEYBOARD)
     return MOOD_SELECT
 
-async def ask_mood_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def ask_mood_time(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     context.user_data['mood_text'] = update.message.text
     await update.message.reply_text("К какому времени дня относится это настроение?", reply_markup=MOOD_TIME_KEYBOARD)
     return TIME_SELECT
 
-async def finalize_mood_log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def finalize_mood_log(update: Update, context: ContextTypes.DEFAULT_TYPES) -> int:
     mood_text_full = context.user_data['mood_text']
     mood_time = update.message.text
     mood_text = mood_text_full.split(" ")[0]
@@ -558,7 +558,7 @@ async def finalize_mood_log(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     return ConversationHandler.END
 
 # --- Функционал "Ты из будущего" ---
-async def start_future_self_image_generation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_future_self_image_generation(update: Update, context: ContextTypes.DEFAULT_TYPES):
     await update.message.reply_text(
         "🔮 Я вижу твое будущее... оно яркое и сильное. "
         "Чтобы показать его тебе, мне нужна твоя недавняя фотография, где хорошо видно лицо. "
@@ -570,7 +570,7 @@ async def start_future_self_image_generation(update: Update, context: ContextTyp
     data['context_state'] = 'awaiting_future_self_photo'
     save_user_data_to_db(user_id, data)
 
-async def handle_future_self_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_future_self_photo(update: Update, context: ContextTypes.DEFAULT_TYPES):
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
     
@@ -640,10 +640,10 @@ async def handle_future_self_photo(update: Update, context: ContextTypes.DEFAULT
 
 
 # --- Дневники и прочее ---
-async def start_workout_logging(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_workout_logging(update: Update, context: ContextTypes.DEFAULT_TYPES):
     await update.message.reply_text("Отличная работа! Какую тренировку ты сегодня выполнил?", reply_markup=WORKOUT_TYPE_KEYBOARD)
 
-async def log_workout(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def log_workout(update: Update, context: ContextTypes.DEFAULT_TYPES):
     workout_type = update.message.text.split(" ")[0]
     user_id = update.effective_user.id
     data = get_user_data_from_db(user_id)
@@ -663,7 +663,7 @@ async def log_workout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await check_profile_update(update, context)
 
 # --- Главный обработчик сообщений ---
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPES) -> None:
     if not update.message or not update.message.text: return
     
     message_text = update.message.text
@@ -689,7 +689,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     handler_func = None
     for key, func in button_map.items():
-        # Сравниваем текст сообщения с ключами в карте, игнорируя эмодзи и регистр
         cleaned_key = re.sub(r'[^\w\s]', '', key).strip().lower()
         cleaned_message = re.sub(r'[^\w\s]', '', message_text).strip().lower()
         if cleaned_message == cleaned_key:
@@ -757,3 +756,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
